@@ -21,26 +21,20 @@ import java.util.ArrayList;
 
 public class AiCodeReview {
     public static void main(String[] args) throws Exception {
-        System.out.println("测试执行");
+        System.out.println("开始执行代码评审");
 
-        // 1. 代码检出
+        // 1. 获取更改的代码
         ProcessBuilder processBuilder = new ProcessBuilder("git", "diff", "HEAD~1", "HEAD");
         processBuilder.directory(new File("."));
-
         Process process = processBuilder.start();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line;
-
         StringBuilder diffCode = new StringBuilder();
         while ((line = reader.readLine()) != null) {
             diffCode.append(line);
         }
-
         int exitCode = process.waitFor();
-        System.out.println("Exited with code:" + exitCode);
-
-        System.out.println("diff code：" + diffCode.toString());
 
         // 2. chatglm 代码评审
         AiResponse aiResponse = codeReview(diffCode.toString());
@@ -66,7 +60,6 @@ public class AiCodeReview {
         aiRequest.setModel(ModelEnum.GLM_4.getCode());
         ArrayList<Prompt> list = new ArrayList<>();
         list.add(new Prompt("user","你是一个高级编程架构师，精通各类场景方案、架构设计和编程语言请，请您根据git diff记录，对代码做出评审。代码为:" + code));
-        list.add(new Prompt("user",code));
         aiRequest.setMessages(list);
 
 
