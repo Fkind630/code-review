@@ -1,15 +1,14 @@
 package com.DXG.sdk;
 
-import com.DXG.sdk.model.AiRequest;
-import com.DXG.sdk.model.AiResponse;
-import com.DXG.sdk.model.Model;
-import com.DXG.sdk.model.Prompt;
+import com.DXG.sdk.entity.request.AiRequest;
+import com.DXG.sdk.entity.response.AiResponse;
+import com.DXG.sdk.enums.ModelEnum;
+import com.DXG.sdk.entity.request.Prompt;
 import com.DXG.sdk.utils.BearerTokenUtil;
 import com.alibaba.fastjson2.JSON;
 
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -64,7 +63,7 @@ public class AiCodeReview {
 
 
         AiRequest aiRequest = new AiRequest();
-        aiRequest.setModel(Model.GLM_4.getCode());
+        aiRequest.setModel(ModelEnum.GLM_4.getCode());
         ArrayList<Prompt> list = new ArrayList<>();
         list.add(new Prompt("user","你是一个高级编程架构师，精通各类场景方案、架构设计和编程语言请，请您根据git diff记录，对代码做出评审。代码为:" + code));
         list.add(new Prompt("user",code));

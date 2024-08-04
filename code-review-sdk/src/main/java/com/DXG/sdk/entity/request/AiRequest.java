@@ -1,4 +1,6 @@
-package com.DXG.sdk.model;
+package com.DXG.sdk.entity.request;
+
+import com.DXG.sdk.enums.ModelEnum;
 
 import java.util.List;
 
@@ -8,7 +10,7 @@ import java.util.List;
  * @datetime: 2024/8/4 21:59
  **/
 public class AiRequest {
-    private String model = Model.GLM_4.getCode();
+    private String model = ModelEnum.GLM_4.getCode();
     private List<Prompt> messages;
 
     public String getModel() {

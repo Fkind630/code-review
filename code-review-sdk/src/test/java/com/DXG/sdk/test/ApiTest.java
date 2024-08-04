@@ -1,6 +1,6 @@
 package com.DXG.sdk.test;
 
-import com.DXG.sdk.model.AiResponse;
+import com.DXG.sdk.entity.response.AiResponse;
 import com.DXG.sdk.utils.BearerTokenUtil;
 import com.alibaba.fastjson2.JSON;
 import org.junit.Test;

@@ -1,4 +1,4 @@
-package com.DXG.sdk.model;
+package com.DXG.sdk.entity;
 
 import java.util.HashMap;
 import java.util.Map;

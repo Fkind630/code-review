@@ -1,21 +1,13 @@
-package com.DXG.sdk.model;
+package com.DXG.sdk.entity.response;
 
 /**
  * @author: DXG
  * @description: TODO
- * @datetime: 2024/8/4 22:03
+ * @datetime: 2024/8/4 22:20
  **/
-public class Prompt {
+public class Message {
     private String role;
     private String content;
-
-    public Prompt() {
-    }
-
-    public Prompt(String role, String content) {
-        this.role = role;
-        this.content = content;
-    }
 
     public String getRole() {
         return role;
@@ -31,5 +23,13 @@ public class Prompt {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "role='" + role + '\'' +
+                ", content='" + content + '\'' +
+                '}';
     }
 }
