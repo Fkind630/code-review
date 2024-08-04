@@ -26,6 +26,6 @@ jobs:
 
       - name: Run Java code
         run: |
-          cd ai-code-review-sdk/src/main/java
+          cd code-review-sdk/src/main/java
           javac com/DXG/sdk/AiCodeReview.java
           java com.DXG.sdk.AiCodeReview
