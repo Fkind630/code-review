@@ -1,4 +1,4 @@
-name: Build and Run AiCodeReview By Main Maven Jar
+name: Build and Run AiCodeReview
 
 on:
   push:
@@ -26,19 +26,23 @@ jobs:
 
       - name: Install and Copy JAR
         run: |
+          # 确保libs目录存在
+          mkdir -p ./libs
           
+          # 安装JAR到本地Maven仓库
           mvn install:install-file \
           -Dfile=./libs/code-review-sdk-1.0.jar \
-          -DgroupId=com.DXG.sdk \
-          -DartifactId=code-review \
+          -DgroupId=com.DXG \
+          -DartifactId=code-review-sdk \
           -Dversion=1.0 \
           -Dpackaging=jar
           
-          mkdir -p ./libs
-          
+          # 复制JAR到libs目录（如果需要的话）
           mvn dependency:copy \
-          -Dartifact=com.DXG.sdk:code-review-sdk:1.0 \
+          -Dartifact=com.DXG:code-review-sdk:1.0 \
           -DoutputDirectory=./libs
 
       - name: Run Code Review
         run: java -jar ./libs/code-review-sdk-1.0.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
