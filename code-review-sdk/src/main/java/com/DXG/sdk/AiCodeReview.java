@@ -1,6 +1,9 @@
 package com.DXG.sdk;
 
+import com.DXG.sdk.model.AiRequest;
 import com.DXG.sdk.model.AiResponse;
+import com.DXG.sdk.model.Model;
+import com.DXG.sdk.model.Prompt;
 import com.DXG.sdk.utils.BearerTokenUtil;
 import com.alibaba.fastjson2.JSON;
 
@@ -9,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 /**
  * @author: DXG
@@ -44,6 +48,7 @@ public class AiCodeReview {
         System.out.println("code review：" + log);
     }
 
+
     private static String codeReview(String code) throws IOException {
         String apiKeySecret = "03b8210062925b6ece762a596e50b38b.khzXJVdQOCm0soGO";
         String token = BearerTokenUtil.getToken(apiKeySecret);
@@ -57,19 +62,17 @@ public class AiCodeReview {
         connection.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
         connection.setDoOutput(true);
 
-        String jsonInpuString = "{"
-                + "\"model\":\"glm-4-flash\","
-                + "\"messages\": ["
-                + "    {"
-                + "        \"role\": \"user\","
-                + "        \"content\": \"你是一个高级编程架构师，精通各类场景方案、架构设计和编程语言请，请您根据git diff记录，对代码做出评审。代码为: " + code + "\""
-                + "    }"
-                + "]"
-                + "}";
+
+        AiRequest aiRequest = new AiRequest();
+        aiRequest.setModel(Model.GLM_4.getCode());
+        ArrayList<Prompt> list = new ArrayList<>();
+        list.add(new Prompt("user","你是一个高级编程架构师，精通各类场景方案、架构设计和编程语言请，请您根据git diff记录，对代码做出评审。代码为:" + code));
+        list.add(new Prompt("user",code));
+        aiRequest.setMessages(list);
 
 
         try (OutputStream os = connection.getOutputStream()) {
-            byte[] input = jsonInpuString.getBytes(StandardCharsets.UTF_8);
+            byte[] input = JSON.toJSONString(aiRequest).getBytes(StandardCharsets.UTF_8);
             os.write(input);
         }
 
