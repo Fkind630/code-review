@@ -24,25 +24,20 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
 
-      - name: Install and Copy JAR
-        run: |
-          # 确保libs目录存在
-          mkdir -p ./libs
-          
-          # 安装JAR到本地Maven仓库
-          mvn install:install-file \
-          -Dfile=./libs/code-review-sdk-1.0.jar \
-          -DgroupId=com.DXG \
-          -DartifactId=code-review-sdk \
-          -Dversion=1.0 \
-          -Dpackaging=jar
-          
-          # 复制JAR到libs目录（如果需要的话）
-          mvn dependency:copy \
-          -Dartifact=com.DXG:code-review-sdk:1.0 \
-          -DoutputDirectory=./libs
+      - name: Build with Maven
+        run: mvn clean install -DskipTests
 
       - name: Run Code Review
-        run: java -jar ./libs/code-review-sdk-1.0.jar
+        run: |
+          # 找到生成的JAR文件
+          JAR_FILE=$(find . -name "code-review-sdk-*.jar" | head -n 1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "Error: code-review-sdk JAR file not found"
+            exit 1
+          fi
+          echo "Found JAR file: $JAR_FILE"
+          
+          # 运行代码审查
+          java -jar $JAR_FILE
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
