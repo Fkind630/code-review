@@ -44,12 +44,12 @@ public class AiCodeReview {
         System.out.println("diff code：" + diffCode.toString());
 
         // 2. chatglm 代码评审
-        String log = codeReview(diffCode.toString());
-        System.out.println("code review：" + log);
+        AiResponse aiResponse = codeReview(diffCode.toString());
+        System.out.println("code review：" + aiResponse.toString());
     }
 
 
-    private static String codeReview(String code) throws IOException {
+    private static AiResponse codeReview(String code) throws IOException {
         String apiKeySecret = "03b8210062925b6ece762a596e50b38b.khzXJVdQOCm0soGO";
         String token = BearerTokenUtil.getToken(apiKeySecret);
 
@@ -92,7 +92,8 @@ public class AiCodeReview {
         in.close();
         connection.disconnect();
 
-        return JSON.parseObject(content.toString(), AiResponse.class).toString();
+        AiResponse aiResponse = JSON.parseObject(content.toString(), AiResponse.class);
+        return aiResponse;
 
     }
 

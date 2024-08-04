@@ -51,4 +51,10 @@ public class AiResponse {
         this.choices = choices;
     }
 
+    @Override
+    public String toString() {
+        return "AiResponse{" +
+                "choices=" + choices +
+                '}';
+    }
 }
