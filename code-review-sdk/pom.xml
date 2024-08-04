@@ -107,7 +107,7 @@
                     <archive>
                         <manifest>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                            <mainClass>com.DXG.AiCodeReview</mainClass>
+                            <mainClass>com.DXG.sdk.AiCodeReview</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

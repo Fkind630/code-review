@@ -1,4 +1,4 @@
-package com.DXG;
+package com.DXG.sdk;
 
 /**
  * @author: DXG
