@@ -20,6 +20,13 @@ public class AiResponse {
         public void setMessage(Message message) {
             this.message = message;
         }
+
+        @Override
+        public String toString() {
+            return "Choice{" +
+                    "message=" + message +
+                    '}';
+        }
     }
 
     public static class Message {
@@ -40,6 +47,14 @@ public class AiResponse {
 
         public void setContent(String content) {
             this.content = content;
+        }
+
+        @Override
+        public String toString() {
+            return "Message{" +
+                    "role='" + role + '\'' +
+                    ", content='" + content + '\'' +
+                    '}';
         }
     }
 
