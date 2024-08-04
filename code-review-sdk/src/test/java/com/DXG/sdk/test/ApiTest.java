@@ -1,50 +1,27 @@
-package com.DXG.sdk;
+package com.DXG.sdk.test;
 
 import com.DXG.sdk.model.AiResponse;
 import com.DXG.sdk.utils.BearerTokenUtil;
 import com.alibaba.fastjson2.JSON;
+import org.junit.Test;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 
 /**
  * @author: DXG
  * @description: TODO
- * @datetime: 2024/8/4 20:41
+ * @datetime: 2024/8/4 21:12
  **/
 
-public class AiCodeReview {
-    public static void main(String[] args) throws Exception {
-        System.out.println("测试执行");
+public class ApiTest {
 
-        // 1. 代码检出
-        ProcessBuilder processBuilder = new ProcessBuilder("git", "diff", "HEAD~1", "HEAD");
-        processBuilder.directory(new File("."));
-
-        Process process = processBuilder.start();
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
-
-        StringBuilder diffCode = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-            diffCode.append(line);
-        }
-
-        int exitCode = process.waitFor();
-        System.out.println("Exited with code:" + exitCode);
-
-        System.out.println("diff code：" + diffCode.toString());
-
-        // 2. chatglm 代码评审
-        String log = codeReview(diffCode.toString());
-        System.out.println("code review：" + log);
-    }
-
-    private static String codeReview(String code) throws IOException {
+    @Test
+    public void test_http() throws IOException {
         String apiKeySecret = "03b8210062925b6ece762a596e50b38b.khzXJVdQOCm0soGO";
         String token = BearerTokenUtil.getToken(apiKeySecret);
 
@@ -57,6 +34,8 @@ public class AiCodeReview {
         connection.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
         connection.setDoOutput(true);
 
+        String code = "1+1";
+
         String jsonInpuString = "{"
                 + "\"model\":\"glm-4-flash\","
                 + "\"messages\": ["
@@ -68,7 +47,7 @@ public class AiCodeReview {
                 + "}";
 
 
-        try (OutputStream os = connection.getOutputStream()) {
+        try(OutputStream os = connection.getOutputStream()){
             byte[] input = jsonInpuString.getBytes(StandardCharsets.UTF_8);
             os.write(input);
         }
@@ -80,7 +59,7 @@ public class AiCodeReview {
         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         String inputLine;
         StringBuilder content = new StringBuilder();
-        while ((inputLine = in.readLine()) != null) {
+        while ((inputLine = in.readLine()) != null){
             content.append(inputLine);
         }
 
@@ -89,8 +68,9 @@ public class AiCodeReview {
         in.close();
         connection.disconnect();
 
-        return JSON.parseObject(content.toString(), AiResponse.class).toString();
+        AiResponse response = JSON.parseObject(content.toString(), AiResponse.class);
+        System.out.println(response.getChoices().get(0).getMessage().getContent());
+
 
     }
-
 }
