@@ -58,13 +58,14 @@ public class AiCodeReview {
         AiResponse aiResponse = codeReview(diffCode.toString());
         System.out.println("code review：" + aiResponse.toString());
 
+        String site = null;
         try {
-            writeLog(token, aiResponse.toString());
+            site = writeLog(token, aiResponse.toString());
         } catch (Exception e) {
             throw new RuntimeException("写入失败!", e);
         }
 
-        pushMessageToWeiXin();
+        pushMessageToWeiXin(site);
 
     }
 
@@ -151,7 +152,7 @@ public class AiCodeReview {
             git.commit().setMessage("Add new file").call();
             git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, "")).call();
 
-            return "https://github.com/Fkind630/code-review-log/blob/master/" + date + "/" + fileName;
+            return "https://github.com/Fkind630/code-review-log/tree/main" + date + "/" + fileName;
         } finally {
             if (git != null) {
                 git.close();
@@ -195,13 +196,14 @@ public class AiCodeReview {
         return commitInfo;
     }
 
-    public static void pushMessageToWeiXin(){
+    public static void pushMessageToWeiXin(String webSite){
         String access_Token = WXAccessTokenUtil.getAccessToken();
 
         CommitInfo commitInfo = getLatestCommitInfo();
         Message message = new Message();
         message.put("project",commitInfo.getProjectName());
         message.put("message",commitInfo.getCommitMessage());
+        message.setUrl(webSite);
         String url = String.format("https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=%s", access_Token);
         sendPostRequest(url, JSON.toJSONString(message));
     }
