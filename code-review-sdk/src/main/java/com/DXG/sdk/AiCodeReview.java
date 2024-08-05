@@ -152,7 +152,7 @@ public class AiCodeReview {
             git.commit().setMessage("Add new file").call();
             git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, "")).call();
 
-            return "https://github.com/Fkind630/code-review-log/tree/main" + date + "/" + fileName;
+            return "https://github.com/Fkind630/code-review-log/tree/main/" + date + "/" + fileName;
         } finally {
             if (git != null) {
                 git.close();
