@@ -6,6 +6,7 @@ import com.DXG.sdk.entity.response.AiResponse;
 import com.DXG.sdk.enums.ModelEnum;
 import com.DXG.sdk.entity.request.Prompt;
 import com.DXG.sdk.utils.BearerTokenUtil;
+import com.DXG.sdk.utils.TimeUtil;
 import com.alibaba.fastjson2.JSON;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Repository;
@@ -169,7 +170,7 @@ public class AiCodeReview {
                 RevCommit latestCommit = git.log().setMaxCount(1).call().iterator().next();
 
                 commitInfo.setAuthorName(latestCommit.getAuthorIdent().getName());
-                commitInfo.setCommitTime(new Date(latestCommit.getCommitTime() * 1000L));
+                commitInfo.setCommitTime(new TimeUtil().timeFormatHelper(latestCommit));
             }
         } catch (Exception e) {
             System.err.println("Error accessing Git repository: " + e.getMessage());

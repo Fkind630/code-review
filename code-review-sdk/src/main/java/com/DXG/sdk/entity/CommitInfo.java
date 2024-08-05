@@ -12,5 +12,5 @@ import java.util.Date;
 @Data
 public class CommitInfo {
     private String authorName;
-    private Date commitTime;
+    private String commitTime;
 }
