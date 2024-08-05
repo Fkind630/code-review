@@ -124,7 +124,7 @@ public class AiCodeReview {
         File dir = new File("repo/" + date);
         if (!dir.exists()) dir.mkdir();
 
-        CommitInfo commitInfo = getHeadCommitInfo();
+        CommitInfo commitInfo = getLatestCommitInfo();
         String fileName = commitInfo.getCommitTime() + "-" + commitInfo.getAuthorName() + "-" + "代码审查结果.md";
 
         File file = new File(dir,fileName);
@@ -139,24 +139,31 @@ public class AiCodeReview {
         return "https://github.com/Fkind630/code-review-log/blob/master" + "/" + dir + "/" + fileName;
     }
 
-    private static CommitInfo getHeadCommitInfo() {
+    private static CommitInfo getLatestCommitInfo() {
         String currentDir = System.getProperty("user.dir");
+        System.out.println("Current directory: " + currentDir);
 
         CommitInfo commitInfo = new CommitInfo();
+        File gitDir = new File(currentDir, ".git");
+
+        if (!gitDir.exists() || !gitDir.isDirectory()) {
+            System.out.println("Not in a Git repository");
+            return commitInfo;
+        }
+
         try {
-            // 打开 Git 仓库
             Repository repository = new FileRepositoryBuilder()
-                    .setGitDir(new File(currentDir + "/.git"))
+                    .setGitDir(gitDir)
                     .build();
 
-            Git git = new Git(repository);
-            // 获取 HEAD 提交
-            RevCommit headCommit = git.log().setMaxCount(1).call().iterator().next();
+            try (Git git = new Git(repository)) {
+                RevCommit latestCommit = git.log().setMaxCount(1).call().iterator().next();
 
-            // 获取提交人信息和提交时间
-            commitInfo.setAuthorName(headCommit.getAuthorIdent().getName());
-            commitInfo.setCommitTime(new Date(headCommit.getCommitTime() * 1000L));
+                commitInfo.setAuthorName(latestCommit.getAuthorIdent().getName());
+                commitInfo.setCommitTime(new Date(latestCommit.getCommitTime() * 1000L));
+            }
         } catch (Exception e) {
+            System.err.println("Error accessing Git repository: " + e.getMessage());
             e.printStackTrace();
         }
 
