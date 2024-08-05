@@ -111,33 +111,42 @@ public class AiCodeReview {
 
     }
 
-    private static String writeLog(String token,String log) throws Exception {
+    private static String writeLog(String token, String log) throws Exception {
+        File repoDir = new File("temp_repo");
+        Git git = null;
+        try {
+            git = Git.cloneRepository()
+                    .setURI("https://github.com/Fkind630/code-review-log")
+                    .setDirectory(repoDir)
+                    .setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, ""))
+                    .call();
 
-        Git git = Git.cloneRepository()
-                .setURI("https://github.com/Fkind630/code-review-log")
-                .setDirectory(new File(""))
-                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(token,""))
-                .call();
+            String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+            File dir = new File(repoDir, date);
+            if (!dir.exists() && !dir.mkdirs()) {
+                throw new IOException("Failed to create directory: " + dir);
+            }
 
-        //创建文件夹
-        String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-        File dir = new File("repo/" + date);
-        if (!dir.exists()) dir.mkdir();
+            CommitInfo commitInfo = getLatestCommitInfo(); // 确保这个方法在其他地方正确实现
+            String fileName = commitInfo.getCommitTime() + "-" + commitInfo.getAuthorName() + "-" + "代码审查结果.md";
 
-        CommitInfo commitInfo = getLatestCommitInfo();
-        String fileName = commitInfo.getCommitTime() + "-" + commitInfo.getAuthorName() + "-" + "代码审查结果.md";
+            File file = new File(dir, fileName);
+            try (FileWriter fileWriter = new FileWriter(file)) {
+                fileWriter.write(log);
+            }
 
-        File file = new File(dir,fileName);
-        try(FileWriter fileWriter = new FileWriter(file)){
-            fileWriter.write(log);
+            git.add().addFilepattern(date + "/" + fileName).call();
+            git.commit().setMessage("Add new file").call();
+            git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, "")).call();
+
+            return "https://github.com/Fkind630/code-review-log/blob/master/" + date + "/" + fileName;
+        } finally {
+            if (git != null) {
+                git.close();
+            }
         }
-
-        git.add().addFilepattern(date + "/" + fileName).call();
-        git.commit().setMessage("Add new file").call();
-        git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(token,""));
-
-        return "https://github.com/Fkind630/code-review-log/blob/master" + "/" + dir + "/" + fileName;
     }
+
 
     private static CommitInfo getLatestCommitInfo() {
         String currentDir = System.getProperty("user.dir");
