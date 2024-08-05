@@ -1,14 +1,17 @@
 package com.DXG.sdk;
 
 import com.DXG.sdk.entity.CommitInfo;
+import com.DXG.sdk.entity.Message;
 import com.DXG.sdk.entity.request.AiRequest;
 import com.DXG.sdk.entity.response.AiResponse;
 import com.DXG.sdk.enums.ModelEnum;
 import com.DXG.sdk.entity.request.Prompt;
 import com.DXG.sdk.utils.BearerTokenUtil;
 import com.DXG.sdk.utils.TimeUtil;
+import com.DXG.sdk.utils.WXAccessTokenUtil;
 import com.alibaba.fastjson2.JSON;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -18,10 +21,9 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author: DXG
@@ -61,6 +63,8 @@ public class AiCodeReview {
         } catch (Exception e) {
             throw new RuntimeException("写入失败!", e);
         }
+
+        pushMessageToWeiXin();
 
     }
 
@@ -131,11 +135,11 @@ public class AiCodeReview {
             CommitInfo commitInfo = getLatestCommitInfo(); // 确保这个方法在其他地方正确实现
 
             StringBuilder buildFileName = new StringBuilder();
-            buildFileName.append("提交人：");
+            buildFileName.append("提交人:");
             buildFileName.append(commitInfo.getAuthorName());
-            buildFileName.append(" 提交时间：");
+            buildFileName.append("-提交时间:");
             buildFileName.append(commitInfo.getCommitTime());
-            buildFileName.append("代码审查结果.md");
+            buildFileName.append("-代码审查结果.md");
             String fileName = buildFileName.toString();
 
             File file = new File(dir, fileName);
@@ -178,6 +182,10 @@ public class AiCodeReview {
 
                 commitInfo.setAuthorName(latestCommit.getAuthorIdent().getName());
                 commitInfo.setCommitTime(new TimeUtil().timeFormatHelper(latestCommit));
+                commitInfo.setCommitMessage(latestCommit.getFullMessage());
+
+                String projectName = getProjectName(git, repository);
+                commitInfo.setProjectName(projectName);
             }
         } catch (Exception e) {
             System.err.println("Error accessing Git repository: " + e.getMessage());
@@ -185,6 +193,95 @@ public class AiCodeReview {
         }
 
         return commitInfo;
+    }
+
+    public void pushMessageToWeiXin(){
+        String access_Token = WXAccessTokenUtil.getAccessToken();
+
+        CommitInfo commitInfo = getLatestCommitInfo();
+        Message message = new Message();
+        message.put("project",commitInfo.getProjectName());
+        message.put("message",commitInfo.getCommitMessage());
+        String url = String.format("https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=%s", access_Token);
+        sendPostRequest(url, JSON.toJSONString(message));
+    }
+
+    private static void sendPostRequest(String urlString, String jsonBody) {
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json; utf-8");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonBody.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            try (Scanner scanner = new Scanner(conn.getInputStream(), StandardCharsets.UTF_8.name())) {
+                String response = scanner.useDelimiter("\\A").next();
+                System.out.println(response);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String getProjectName(Git git, Repository repository) {
+        String projectName = null;
+
+        // 方法1：从远程仓库URL获取
+        try {
+            Config config = repository.getConfig();
+            Set<String> remotes = config.getSubsections("remote");
+            if (!remotes.isEmpty()) {
+                String remoteName = remotes.iterator().next(); // 通常是 "origin"
+                String remoteUrl = config.getString("remote", remoteName, "url");
+                if (remoteUrl != null) {
+                    projectName = extractProjectNameFromUrl(remoteUrl);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting project name from remote URL: " + e.getMessage());
+        }
+
+        // 方法2：如果方法1失败，使用本地仓库的根目录名称
+        if (projectName == null || projectName.isEmpty()) {
+            File repoDir = repository.getWorkTree();
+            projectName = repoDir.getName();
+        }
+
+        // 方法3：如果前两种方法都失败，尝试从 .git/description 文件读取
+        if (projectName == null || projectName.isEmpty()) {
+            File descriptionFile = new File(repository.getDirectory(), "description");
+            if (descriptionFile.exists()) {
+                try {
+                    projectName = Files.readString(descriptionFile.toPath()).trim();
+                } catch (IOException e) {
+                    System.err.println("Error reading description file: " + e.getMessage());
+                }
+            }
+        }
+
+        // 如果所有方法都失败，使用默认值
+        if (projectName == null || projectName.isEmpty()) {
+            projectName = "UnknownProject";
+        }
+
+        return projectName;
+    }
+
+    private static String extractProjectNameFromUrl(String url) {
+        // 移除 .git 后缀（如果有）
+        url = url.replaceAll("\\.git$", "");
+        // 获取最后一个 '/' 后的内容
+        int lastSlashIndex = url.lastIndexOf('/');
+        if (lastSlashIndex != -1 && lastSlashIndex < url.length() - 1) {
+            return url.substring(lastSlashIndex + 1);
+        }
+        return null;
     }
 
 

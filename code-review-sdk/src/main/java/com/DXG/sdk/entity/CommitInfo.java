@@ -13,4 +13,6 @@ import java.util.Date;
 public class CommitInfo {
     private String authorName;
     private String commitTime;
+    private String commitMessage;
+    private String projectName;
 }

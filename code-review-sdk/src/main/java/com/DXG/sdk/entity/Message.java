@@ -1,5 +1,7 @@
 package com.DXG.sdk.entity;
 
+import lombok.Data;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,10 +10,11 @@ import java.util.Map;
  * @description: TODO
  * @datetime: 2024/8/4 22:01
  **/
+@Data
 public class Message {
-    private String touser = "or0Ab6ivwmypESVp_bYuk92T6SvU";
-    private String template_id = "GLlAM-Q4jdgsktdNd35hnEbHVam2mwsW2YWuxDhpQkU";
-    private String url = "https://weixin.qq.com";
+    private String touser = "oNKsQ69LWDR3Kwm-hCPF9fsY6u8E";
+    private String template_id = "gqUFDYr1EFMWK5d_0JWpnUaEo7OnAAXo_sUiohzyy-c";
+    private String url = "xxx";
     private Map<String, Map<String, String>> data = new HashMap<>();
 
     public void put(String key, String value) {
@@ -23,37 +26,4 @@ public class Message {
             }
         });
     }
-
-    public String getTouser() {
-        return touser;
-    }
-
-    public void setTouser(String touser) {
-        this.touser = touser;
-    }
-
-    public String getTemplate_id() {
-        return template_id;
-    }
-
-    public void setTemplate_id(String template_id) {
-        this.template_id = template_id;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public Map<String, Map<String, String>> getData() {
-        return data;
-    }
-
-    public void setData(Map<String, Map<String, String>> data) {
-        this.data = data;
-    }
-
 }
