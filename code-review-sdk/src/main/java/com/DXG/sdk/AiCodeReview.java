@@ -35,7 +35,7 @@ public class AiCodeReview {
 
         //获取token
         String token = System.getenv("GITHUB_TOKEN");
-        if (Objects.isNull(token) || " ".equals(token)){
+        if (Objects.isNull(token) || " ".equals(token)) {
             throw new RuntimeException("Token为空！请检查Token");
         }
 
@@ -57,9 +57,9 @@ public class AiCodeReview {
         System.out.println("code review：" + aiResponse.toString());
 
         try {
-            writeLog(token,aiResponse.toString());
-        }catch (Exception e){
-            throw new RuntimeException("写入失败!",e);
+            writeLog(token, aiResponse.toString());
+        } catch (Exception e) {
+            throw new RuntimeException("写入失败!", e);
         }
 
     }
@@ -82,7 +82,7 @@ public class AiCodeReview {
         AiRequest aiRequest = new AiRequest();
         aiRequest.setModel(ModelEnum.GLM_4.getCode());
         ArrayList<Prompt> list = new ArrayList<>();
-        list.add(new Prompt("user","你是一个顶级编程架构师，精通各类场景方案、架构设计和编程语言，请您根据git diff记录，对代码做出评审。代码为:" + code));
+        list.add(new Prompt("user", "你是一个顶级编程架构师，精通各类场景方案、架构设计和编程语言，请您根据git diff记录，对代码做出评审。代码为:" + code));
         aiRequest.setMessages(list);
 
 
@@ -129,7 +129,14 @@ public class AiCodeReview {
             }
 
             CommitInfo commitInfo = getLatestCommitInfo(); // 确保这个方法在其他地方正确实现
-            String fileName = commitInfo.getCommitTime() + "-" + commitInfo.getAuthorName() + "-" + "代码审查结果.md";
+
+            StringBuilder buildFileName = new StringBuilder();
+            buildFileName.append("提交人：");
+            buildFileName.append(commitInfo.getAuthorName());
+            buildFileName.append(" 提交时间：");
+            buildFileName.append(commitInfo.getCommitTime());
+            buildFileName.append("代码审查结果.md");
+            String fileName = buildFileName.toString();
 
             File file = new File(dir, fileName);
             try (FileWriter fileWriter = new FileWriter(file)) {
