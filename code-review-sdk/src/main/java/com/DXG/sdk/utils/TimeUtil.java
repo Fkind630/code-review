@@ -20,7 +20,7 @@ public class TimeUtil {
     public String timeFormatHelper( RevCommit latestCommit){
         int commitTime = latestCommit.getCommitTime();
         Instant instant = Instant.ofEpochSecond(commitTime);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss").withZone(ZoneId.systemDefault());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
         return formatter.format(instant);
     }
 }
