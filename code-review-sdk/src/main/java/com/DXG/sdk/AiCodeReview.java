@@ -195,7 +195,7 @@ public class AiCodeReview {
         return commitInfo;
     }
 
-    public void pushMessageToWeiXin(){
+    public static void pushMessageToWeiXin(){
         String access_Token = WXAccessTokenUtil.getAccessToken();
 
         CommitInfo commitInfo = getLatestCommitInfo();
