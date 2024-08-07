@@ -24,8 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author: DXG
@@ -34,22 +32,32 @@ import java.util.regex.Pattern;
  **/
 
 public class AiCodeReview {
-
-    static String[] EXCLUDED_EXTENSIONS = {".yml", ".yaml", ".properties"};
-    static String[] EXCLUDED_FILES = {"settings.gradle", "pom.xml"};
-    static Pattern FILE_PATTERN = Pattern.compile("^diff --git a/(.+) b/(.+)$");
-
     public static void main(String[] args) throws Exception {
         System.out.println("开始执行代码评审");
 
-        //获取token
+        String[] EXCLUDED_EXTENSIONS = {".yml", ".yaml", ".properties"};
+        String[] EXCLUDED_FILES = {"settings.gradle", "pom.xml"};
+
+        // 获取token
         String token = System.getenv("GITHUB_TOKEN");
-        if (Objects.isNull(token) || " ".equals(token)) {
+        if (token == null || token.trim().isEmpty()) {
             throw new RuntimeException("Token为空！请检查Token");
         }
 
-        // 1. 获取更改的代码
-        ProcessBuilder processBuilder = new ProcessBuilder("git", "diff", "HEAD~1", "HEAD");
+        // 构建git diff命令，直接排除特定文件
+        List<String> command = new ArrayList<>(Arrays.asList("git", "diff", "HEAD~1", "HEAD", "--diff-filter=ACMRT"));
+
+        // 添加排除的文件扩展名
+        for (String ext : EXCLUDED_EXTENSIONS) {
+            command.add(":(exclude)*" + ext);
+        }
+
+        // 添加排除的具体文件
+        for (String file : EXCLUDED_FILES) {
+            command.add(":(exclude)" + file);
+        }
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(new File("."));
         Process process = processBuilder.start();
 
@@ -61,51 +69,8 @@ public class AiCodeReview {
         }
         int exitCode = process.waitFor();
 
-        if (exitCode != 0) {
-            throw new RuntimeException("Git diff 命令执行失败，退出码: " + exitCode);
-        }
-
-        // 2. 过滤代码
-        StringBuilder filteredDiff = new StringBuilder();
-        String[] lines = diffCode.toString().split("\n");
-        boolean includeFile = true;
-        String currentFile = "";
-
-        for (String l : lines) {
-            Matcher matcher = FILE_PATTERN.matcher(l);
-            if (matcher.find()) {
-                currentFile = matcher.group(2);
-                includeFile = true;
-                for (String ext : EXCLUDED_EXTENSIONS) {
-                    if (currentFile.endsWith(ext)) {
-                        includeFile = false;
-                        break;
-                    }
-                }
-                if (includeFile) {
-                    for (String file : EXCLUDED_FILES) {
-                        if (currentFile.endsWith(file)) {
-                            includeFile = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (includeFile) {
-                filteredDiff.append(line).append("\n");
-            }
-        }
-
-        String filteredDiffCode = filteredDiff.toString();
-
-        if (filteredDiffCode.trim().isEmpty()) {
-            System.out.println("没有需要评审的代码变更");
-            return;
-        }
-
-
         // 2. chatglm 代码评审
-        AiResponse aiResponse = codeReview(filteredDiffCode);
+        AiResponse aiResponse = codeReview(diffCode.toString());
         System.out.println("code review：" + aiResponse.toString());
 
         String site = null;
