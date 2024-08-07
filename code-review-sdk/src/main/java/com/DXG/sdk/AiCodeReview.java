@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author: DXG
@@ -32,6 +34,11 @@ import java.util.*;
  **/
 
 public class AiCodeReview {
+
+    static String[] EXCLUDED_EXTENSIONS = {".yml", ".yaml", ".properties"};
+    static String[] EXCLUDED_FILES = {"settings.gradle", "pom.xml"};
+    static Pattern FILE_PATTERN = Pattern.compile("^diff --git a/(.+) b/(.+)$");
+
     public static void main(String[] args) throws Exception {
         System.out.println("开始执行代码评审");
 
@@ -54,8 +61,51 @@ public class AiCodeReview {
         }
         int exitCode = process.waitFor();
 
+        if (exitCode != 0) {
+            throw new RuntimeException("Git diff 命令执行失败，退出码: " + exitCode);
+        }
+
+        // 2. 过滤代码
+        StringBuilder filteredDiff = new StringBuilder();
+        String[] lines = diffCode.toString().split("\n");
+        boolean includeFile = true;
+        String currentFile = "";
+
+        for (String l : lines) {
+            Matcher matcher = FILE_PATTERN.matcher(l);
+            if (matcher.find()) {
+                currentFile = matcher.group(2);
+                includeFile = true;
+                for (String ext : EXCLUDED_EXTENSIONS) {
+                    if (currentFile.endsWith(ext)) {
+                        includeFile = false;
+                        break;
+                    }
+                }
+                if (includeFile) {
+                    for (String file : EXCLUDED_FILES) {
+                        if (currentFile.endsWith(file)) {
+                            includeFile = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (includeFile) {
+                filteredDiff.append(line).append("\n");
+            }
+        }
+
+        String filteredDiffCode = filteredDiff.toString();
+
+        if (filteredDiffCode.trim().isEmpty()) {
+            System.out.println("没有需要评审的代码变更");
+            return;
+        }
+
+
         // 2. chatglm 代码评审
-        AiResponse aiResponse = codeReview(diffCode.toString());
+        AiResponse aiResponse = codeReview(filteredDiffCode);
         System.out.println("code review：" + aiResponse.toString());
 
         String site = null;
