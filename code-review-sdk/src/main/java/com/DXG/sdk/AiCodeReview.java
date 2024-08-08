@@ -4,6 +4,7 @@ import com.DXG.sdk.entity.CommitInfo;
 import com.DXG.sdk.entity.Message;
 import com.DXG.sdk.entity.request.AiRequest;
 import com.DXG.sdk.entity.response.AiResponse;
+import com.DXG.sdk.entity.response.Choice;
 import com.DXG.sdk.enums.ModelEnum;
 import com.DXG.sdk.entity.request.Prompt;
 import com.DXG.sdk.utils.BearerTokenUtil;
@@ -131,7 +132,18 @@ public class AiCodeReview {
                 Thread.sleep(1000);
             }
         }
-        throw new IOException("请求失败！此次AI代码审查失败！请人工审查！");
+
+        AiResponse aiResponse = new AiResponse();
+        List<Choice> choices = new ArrayList<>();
+        Choice choice = new Choice();
+        com.DXG.sdk.entity.response.Message message = new com.DXG.sdk.entity.response.Message();
+
+        message.setContent("此次调用API失败！请人工进行审查！");
+        choice.setMessage(message);
+        choices.add(choice);
+        aiResponse.setChoices(choices);
+
+        return aiResponse;
     }
 
     private static String writeLog(String token, String log) throws Exception {
