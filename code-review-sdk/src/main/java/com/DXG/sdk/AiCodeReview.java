@@ -12,11 +12,17 @@ import com.DXG.sdk.utils.TimeUtil;
 import com.DXG.sdk.utils.WXAccessTokenUtil;
 import com.alibaba.fastjson2.JSON;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -33,11 +39,12 @@ import java.util.*;
  **/
 
 public class AiCodeReview {
+
+    static String[] EXCLUDED_EXTENSIONS = {".yml", ".yaml", ".properties"};
+    static String[] EXCLUDED_FILES = {"settings.gradle", "pom.xml"};
+
     public static void main(String[] args) throws Exception {
         System.out.println("开始执行代码评审");
-
-        String[] EXCLUDED_EXTENSIONS = {".yml", ".yaml", ".properties"};
-        String[] EXCLUDED_FILES = {"settings.gradle", "pom.xml"};
 
         // 获取token
         String token = System.getenv("GITHUB_TOKEN");
