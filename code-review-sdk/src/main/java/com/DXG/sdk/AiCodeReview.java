@@ -85,51 +85,53 @@ public class AiCodeReview {
     }
 
 
-    private static AiResponse codeReview(String code) throws IOException {
+    private static AiResponse codeReview(String code) throws Exception {
         String apiKeySecret = "03b8210062925b6ece762a596e50b38b.khzXJVdQOCm0soGO";
         String token = BearerTokenUtil.getToken(apiKeySecret);
 
-        URL url = new URL("https://open.bigmodel.cn/api/paas/v4/chat/completions");
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        for (int attempt = 0;attempt < 3;attempt++){
+            URL url = new URL("https://open.bigmodel.cn/api/paas/v4/chat/completions");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Authorization", "Bearer " + token);
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
-        connection.setDoOutput(true);
-
-
-        AiRequest aiRequest = new AiRequest();
-        aiRequest.setModel(ModelEnum.GLM_4.getCode());
-        ArrayList<Prompt> list = new ArrayList<>();
-        list.add(new Prompt("user", "你是一个顶级编程架构师，精通各类场景方案、架构设计和编程语言，请您根据git diff记录，对代码做出评审。代码为:" + code));
-        aiRequest.setMessages(list);
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Authorization", "Bearer " + token);
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
+            connection.setDoOutput(true);
 
 
-        try (OutputStream os = connection.getOutputStream()) {
-            byte[] input = JSON.toJSONString(aiRequest).getBytes(StandardCharsets.UTF_8);
-            os.write(input);
+            AiRequest aiRequest = new AiRequest();
+            aiRequest.setModel(ModelEnum.GLM_4.getCode());
+            ArrayList<Prompt> list = new ArrayList<>();
+            list.add(new Prompt("user", "你是一个顶级编程架构师，精通各类场景方案、架构设计和编程语言，请您根据git diff记录，对代码做出评审。代码为:" + code));
+            aiRequest.setMessages(list);
+
+
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = JSON.toJSONString(aiRequest).getBytes(StandardCharsets.UTF_8);
+                os.write(input);
+            }
+
+            int responseCode = connection.getResponseCode();
+            System.out.println(responseCode);
+            if (responseCode == 200){
+                //读取输出的结果
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String inputLine;
+                StringBuilder content = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    content.append(inputLine);
+                }
+                System.out.println(content);
+                in.close();
+                connection.disconnect();
+                AiResponse aiResponse = JSON.parseObject(content.toString(), AiResponse.class);
+                return aiResponse;
+            }else{
+                Thread.sleep(1000);
+            }
         }
-
-        int responseCode = connection.getResponseCode();
-        System.out.println(responseCode);
-
-        //读取输出的结果
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        String inputLine;
-        StringBuilder content = new StringBuilder();
-        while ((inputLine = in.readLine()) != null) {
-            content.append(inputLine);
-        }
-
-        System.out.println(content);
-
-        in.close();
-        connection.disconnect();
-
-        AiResponse aiResponse = JSON.parseObject(content.toString(), AiResponse.class);
-        return aiResponse;
-
+        throw new IOException("请求失败！此次AI代码审查失败！请人工审查！");
     }
 
     private static String writeLog(String token, String log) throws Exception {
