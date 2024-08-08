@@ -12,11 +12,17 @@ import com.DXG.sdk.utils.TimeUtil;
 import com.DXG.sdk.utils.WXAccessTokenUtil;
 import com.alibaba.fastjson2.JSON;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -33,11 +39,14 @@ import java.util.*;
  **/
 
 public class AiCodeReview {
+
+    static String[] EXCLUDED_EXTENSIONS = {".yml", ".yaml", ".properties"};
+    static String[] EXCLUDED_FILES = {"settings.gradle", "pom.xml"};
+
     public static void main(String[] args) throws Exception {
         System.out.println("开始执行代码评审");
 
-        String[] EXCLUDED_EXTENSIONS = {".yml", ".yaml", ".properties"};
-        String[] EXCLUDED_FILES = {"settings.gradle", "pom.xml"};
+
 
         // 获取token
         String token = System.getenv("GITHUB_TOKEN");
@@ -45,30 +54,36 @@ public class AiCodeReview {
             throw new RuntimeException("Token为空！请检查Token");
         }
 
-        // 构建git diff命令，直接排除特定文件
-        List<String> command = new ArrayList<>(Arrays.asList("git", "diff", "HEAD~1", "HEAD", "--diff-filter=ACMRT"));
-
-        // 添加排除的文件扩展名
-        for (String ext : EXCLUDED_EXTENSIONS) {
-            command.add(":(exclude)*" + ext);
-        }
-
-        // 添加排除的具体文件
-        for (String file : EXCLUDED_FILES) {
-            command.add(":(exclude)" + file);
-        }
-
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        processBuilder.directory(new File("."));
-        Process process = processBuilder.start();
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
         StringBuilder diffCode = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-            diffCode.append(line);
+
+        try (Repository repository = Git.open(new File(".")).getRepository();
+             Git git = new Git(repository)) {
+
+            ObjectId head = repository.resolve("HEAD");
+            ObjectId headParent = repository.resolve("HEAD~1");
+
+            ObjectReader reader = repository.newObjectReader();
+            CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+            oldTreeIter.reset(reader, headParent);
+            CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+            newTreeIter.reset(reader, head);
+
+            List<DiffEntry> diffs = git.diff()
+                    .setNewTree(newTreeIter)
+                    .setOldTree(oldTreeIter)
+                    .call();
+
+            for (DiffEntry diff : diffs) {
+                if (shouldIncludeDiff(diff)) {
+                    diffCode.append(getDiffContent(git, diff));
+                }
+            }
+
+            System.out.println(diffCode.toString());
+
+        } catch (IOException | GitAPIException e) {
+            e.printStackTrace();
         }
-        int exitCode = process.waitFor();
 
         // 2. chatglm 代码评审
         AiResponse aiResponse = codeReview(diffCode.toString());
@@ -83,6 +98,21 @@ public class AiCodeReview {
 
         pushMessageToWeiXin(site);
 
+    }
+
+    private static boolean shouldIncludeDiff(DiffEntry diff) {
+        String path = diff.getNewPath();
+        return !Arrays.asList(EXCLUDED_FILES).contains(path) &&
+                Arrays.stream(EXCLUDED_EXTENSIONS).noneMatch(path::endsWith);
+    }
+
+    private static String getDiffContent(Git git, DiffEntry diff) throws IOException, GitAPIException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        git.diff()
+                .setOutputStream(out)
+                .setPathFilter(PathFilter.create(diff.getNewPath()))
+                .call();
+        return out.toString();
     }
 
 
